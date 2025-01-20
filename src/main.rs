@@ -5,10 +5,10 @@ mod middleware;
 mod route;
 mod service;
 mod state;
+mod repository;
 
 use anyhow::{Context, Result};
-use axum::{extract::State, response::{IntoResponse, Redirect, Response}
-};
+use axum::{extract::State, response::IntoResponse};
 use config::parameter;
 use errors::AppError;
 use http::Method;
@@ -64,6 +64,7 @@ async fn main() -> Result<(), AppError> {
     Ok(())
 }
 
+// TODO - Bad naming - need to redo the structs for google responses.
 #[derive(Debug, Serialize, Deserialize)]
 struct User {
     sub: String,
@@ -78,7 +79,7 @@ async fn index(State(app_state): State<AppState>) -> impl IntoResponse {
             "Hey {}! You're logged in!\nYou may now access `/protected`.\nLog out with `/logout`.",
             user.name
         ),
-        None => "You're not logged in.\nVisit `/auth/discord` to do so.".to_string(),
+        None => "You're not logged in.\nVisit `/auth/google` to do so.".to_string(),
     }
 }
 
@@ -86,20 +87,5 @@ async fn protected(State(app_state): State<AppState>) -> Result<impl IntoRespons
     match app_state.user_context.read().await.as_ref() {
         Some(user) => Ok(format!("Welcome to the protected area, {}!", user.name)),
         None => Err(anyhow::anyhow!("You're not logged in.").into()),
-    }
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct AuthRequest {
-    code: String,
-    state: String,
-}
-
-struct AuthRedirect;
-
-impl IntoResponse for AuthRedirect {
-    fn into_response(self) -> Response {
-        Redirect::temporary("/auth/google").into_response()
     }
 }

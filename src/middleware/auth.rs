@@ -7,7 +7,7 @@ use axum::{
 
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 
-use crate::{ errors::AppError, handler::auth_handler::get_user, service::google_token_service::{GoogleTokenService, TokenServiceTrait}, state::app_state::UserContext, AppState};
+use crate::{ errors::AppError, repository::user_repository::UserRepositoryTrait, service::google_token_service::{GoogleTokenService, TokenServiceTrait}, state::app_state::UserContext, AppState};
 
 // TODO - Add appropriate error responses
 pub async fn auth(
@@ -20,7 +20,7 @@ pub async fn auth(
     let cookies = CookieJar::from_headers(req.headers());
     if let Some(access_token_cookie) = cookies.get("access_token") {
         let access_token = access_token_cookie.value().to_string();
-        if let Some(_) = validate_and_set_user_context(&app_state, &google_token_service, &access_token).await? {
+        if (validate_and_set_user_context(&app_state, &google_token_service, &access_token).await?).is_some() {
             return Ok(next.run(req).await);
         }
     }
@@ -29,7 +29,6 @@ pub async fn auth(
         let refresh_token = refresh_token_cookie.value().to_string();
         return handle_refresh_token(&app_state, &google_token_service, &refresh_token, req, next).await;
     }
-
     Ok(Redirect::to("/").into_response())
 }
 
@@ -39,10 +38,9 @@ async fn validate_and_set_user_context(
     access_token: &str,
 ) -> Result<Option<UserContext>, AppError> {
     if let Ok(google_token_info) = google_token_service.get_token_info(access_token).await {
-        let existing_user = get_user(&google_token_info.user_id, app_state).await?;
+        let existing_user = app_state.user_repository.find_user_by_google_id(&google_token_info.user_id).await?;
         if let Some(user_context) = existing_user {
-            let mut user_context_lock = app_state.user_context.write().await;
-            *user_context_lock = Some(user_context.clone());
+            app_state.set_user_context(user_context.clone()).await;
             return Ok(Some(user_context));
         }
     }
@@ -67,7 +65,7 @@ async fn handle_refresh_token(
             SET_COOKIE,
             new_access_token_cookie.to_string().parse().unwrap(),
         );
-        if let Some(_) = validate_and_set_user_context(app_state, google_token_service, new_access_token.secret()).await? {
+        if (validate_and_set_user_context(app_state, google_token_service, new_access_token.secret()).await?).is_some() {
             return Ok(response);
         }
     }

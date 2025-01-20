@@ -6,12 +6,19 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::{extract::cookie::Cookie, headers, TypedHeader};
-use chrono::{Duration, Utc};
 use rand::RngCore;
+use serde::Deserialize;
 
-use crate::{config::database::DatabaseTrait, errors::AppError, service::google_token_service::{GoogleTokenService, TokenServiceTrait}, state::app_state::UserContext, AppState, AuthRequest, User};
+use crate::{errors::AppError, repository::session_repository::SessionRepositoryTrait, service::google_token_service::{GoogleTokenService, TokenServiceTrait}, AppState};
 
 static SESSION_COOKIE_NAME: &str = "SESSION";
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+pub struct AuthRequest {
+    code: String,
+    state: String,
+}
 
 pub async fn google_auth(
     State(app_state): State<AppState>,
@@ -20,8 +27,7 @@ pub async fn google_auth(
     let (auth_url, csrf_token) = google_token_service.generate_authorisation_url().await?;
 
     let session_id = generate_session_id();
-
-    store_csrf_token(&session_id, csrf_token.secret(), &app_state).await?;
+    app_state.session_repository.add_csrf_token(&session_id, csrf_token.secret()).await?;
 
     let cookies = [format!(
         "{SESSION_COOKIE_NAME}={session_id}; SameSite=Lax; HttpOnly; Secure; Path=/"
@@ -44,7 +50,7 @@ pub async fn auth_callback(
     State(google_token_service): State<GoogleTokenService>,
 ) -> Result<impl IntoResponse, AppError> {
     tracing::debug!("Handling google auth callback");
-    csrf_token_validation_workflow(&app_state, &query, &cookies).await?;
+    validate_csrf_token(&app_state, &query, &cookies).await?;
 
     let (access_token, refresh_token) = google_token_service.exchange_authorisation_code(query.code.clone()).await?;
 
@@ -54,12 +60,8 @@ pub async fn auth_callback(
 
     let user_data = google_token_service.get_user_info(&access_token).await?;
 
-
-    let user_context = get_or_insert_user(&user_data, &app_state).await?;
-    {
-        let mut user_context_lock = app_state.user_context.write().await;
-        *user_context_lock = Some(user_context.clone());
-    }
+    let user_context = app_state.user_service.get_or_insert_user(&user_data).await?;
+    app_state.set_user_context(user_context).await;
 
     let cookies = [
         format!("access_token={access_token}; SameSite=Lax; HttpOnly; Secure; Path=/"),
@@ -76,7 +78,7 @@ pub async fn auth_callback(
     Ok((headers, Redirect::to("/")))
 }
 
-async fn csrf_token_validation_workflow(
+async fn validate_csrf_token(
     app_state: &AppState,
     auth_request: &AuthRequest,
     cookies: &headers::Cookie,
@@ -87,11 +89,8 @@ async fn csrf_token_validation_workflow(
         .context("unexpected error getting cookie name")?
         .to_string();
 
-    let stored_csrf_token = get_csrf_token_by_session(app_state, &session_id)
-        .await?
-        .context("Session not found")?;
-
-    expire_session(app_state, &session_id).await?;
+    let stored_csrf_token = app_state.session_repository.get_csrf_token_by_session_id(&session_id).await?;
+    app_state.session_repository.expire_session(&session_id).await?;
 
     if stored_csrf_token != auth_request.state {
         return Err(anyhow!("CSRF token mismatch").into());
@@ -104,37 +103,6 @@ fn generate_session_id() -> String {
     let mut key = vec![0u8; 64];
     rand::thread_rng().fill_bytes(&mut key);
     base64::encode(key)
-}
-
-async fn get_csrf_token_by_session(
-    app_state: &AppState,
-    session_id: &String,
-) -> Result<Option<String>, AppError> {
-    let row = sqlx::query!(
-        r#"
-            SELECT csrf_token FROM sessions WHERE session_id = ? AND expires_at > NOW()
-        "#,
-        session_id
-    )
-    .fetch_optional(app_state.database.get_pool())
-    .await?;
-
-    Ok(row.map(|r| r.csrf_token))
-}
-
-async fn expire_session(app_state: &AppState, session_id: &String) -> Result<(), AppError> {
-    sqlx::query!(
-        r#"
-            UPDATE sessions
-            SET expires_at = NOW()
-            WHERE session_id = ?
-        "#,
-        session_id
-    )
-    .execute(app_state.database.get_pool())
-    .await?;
-
-    Ok(())
 }
 
 pub async fn logout(
@@ -152,10 +120,7 @@ pub async fn logout(
         google_token_service.revoke_token(refresh_token.to_string()).await?;
     }
 
-    {
-        let mut user_context_lock = app_state.user_context.write().await;
-        *user_context_lock = None;
-    }
+    app_state.clear_user_context().await;
 
     // TODO - refactor
     let empty_access_token = Cookie::build(("access_token", ""))
@@ -178,75 +143,4 @@ pub async fn logout(
     );
 
     Ok((headers, Redirect::to("/")))
-}
-
-pub async fn store_csrf_token(session_id: &String, csrf_token_secret: &String, app_state: &AppState) -> Result<(), AppError> {
-    let expires_at = Utc::now() + Duration::hours(1);
-    sqlx::query!(
-        r#"
-            INSERT INTO sessions (session_id, csrf_token, expires_at)
-            VALUES (?, ?, ?)
-            "#,
-        session_id,
-        csrf_token_secret,
-        expires_at
-    )
-    .execute(app_state.database.get_pool())
-    .await?;
-
-    Ok(())
-}
-
-pub async fn get_user(user_id: &String, app_state: &AppState) -> Result<Option<UserContext>, AppError> {
-    let user_context = sqlx::query_as!(
-        UserContext,
-        r#"
-        SELECT 
-            CAST(id as unsigned) AS user_id, 
-            email, 
-            first_name AS name
-        FROM users
-        WHERE google_id = ?
-        "#,
-        user_id
-    )
-    .fetch_optional(app_state.database.get_pool())
-    .await?;
-
-    Ok(user_context)
-}
-
-pub async fn create_user(user_data: &User, app_state: &AppState) -> Result<u64, AppError> {
-    tracing::debug!("Creating a new user");
-    let result = sqlx::query!(
-        r#"
-            INSERT INTO users (google_id, email, first_name, last_name)
-            VALUES (?, ?, ?, ?)
-        "#,
-        user_data.sub,
-        user_data.email,
-        user_data.given_name,
-        user_data.family_name,
-    )
-    .execute(app_state.database.get_pool())
-    .await;
-
-    let user = result.context("Failed to insert user into database")?;
-    Ok(user.last_insert_id())
-}
-
-
-async fn get_or_insert_user(user_data: &User, app_state: &AppState) -> Result<UserContext, AppError> {
-    let existing_user = get_user(&user_data.sub, app_state).await?;
-    if let Some(user_context) = existing_user {
-        return Ok(user_context);
-    }
-
-    let user_id = create_user(user_data, app_state).await?;
-
-    Ok(UserContext {
-        user_id,
-        email: user_data.email.clone(),
-        name: user_data.given_name.clone(),
-    })
 }
