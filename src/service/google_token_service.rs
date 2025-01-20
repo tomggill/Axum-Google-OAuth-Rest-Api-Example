@@ -3,7 +3,7 @@ use oauth2::{basic::BasicClient, reqwest::async_http_client, AccessToken, AuthUr
 use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 
-use crate::{config:: parameter, errors::AppError, User};
+use crate::{config:: parameter, error::{app_error::AppError, token_error::TokenError}, User};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct GoogleTokenInfo {
@@ -88,7 +88,7 @@ impl TokenServiceTrait for GoogleTokenService {
         let response = self.oauth_client.revoke_token(revocable_token)?.request_async(async_http_client).await;
 
         if let Err(error) = response {
-            return Err(AppError::from(error));
+            return Err(TokenError::InvalidToken)?;
         } 
         Ok(())
     }

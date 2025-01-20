@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 
-use crate::{config::database::{Database, DatabaseTrait}, errors::AppError};
+use crate::{config::database::{Database, DatabaseTrait}, error::app_error::AppError};
 
 
 #[derive(Clone)]

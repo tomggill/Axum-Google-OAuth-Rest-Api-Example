@@ -4,7 +4,7 @@ use axum::extract::FromRef;
 use reqwest::Client;
 use tokio::sync::RwLock;
 
-use crate::{config::database::{Database, DatabaseTrait}, errors::AppError, repository::{session_repository::{SessionRepository, SessionRepositoryTrait}, user_repository::{UserRepository, UserRepositoryTrait}}, service::{google_token_service::{GoogleTokenService, TokenServiceTrait}, user_service::UserService}};
+use crate::{config::database::{Database, DatabaseTrait}, error::app_error::AppError, repository::{session_repository::{SessionRepository, SessionRepositoryTrait}, user_repository::{UserRepository, UserRepositoryTrait}}, service::{google_token_service::{GoogleTokenService, TokenServiceTrait}, user_service::UserService}};
 
 #[derive(Clone)]
 pub struct UserContext {
