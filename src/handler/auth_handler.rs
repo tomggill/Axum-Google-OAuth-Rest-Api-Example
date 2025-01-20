@@ -9,7 +9,7 @@ use axum_extra::{extract::cookie::Cookie, headers, TypedHeader};
 use rand::RngCore;
 use serde::Deserialize;
 
-use crate::{errors::AppError, repository::session_repository::SessionRepositoryTrait, service::google_token_service::{GoogleTokenService, TokenServiceTrait}, AppState};
+use crate::{error::app_error::AppError, repository::session_repository::SessionRepositoryTrait, service::google_token_service::{GoogleTokenService, TokenServiceTrait}, AppState};
 
 static SESSION_COOKIE_NAME: &str = "SESSION";
 

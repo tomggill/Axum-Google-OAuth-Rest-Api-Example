@@ -2,7 +2,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use sqlx::{mysql::MySqlPoolOptions, MySql, MySqlPool, Pool};
 
-use crate::errors::AppError;
+use crate::error::app_error::AppError;
 
 use super::parameter;
 

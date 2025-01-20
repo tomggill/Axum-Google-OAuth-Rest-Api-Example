@@ -1,16 +1,16 @@
 mod config;
-mod errors;
 mod handler;
 mod middleware;
 mod route;
 mod service;
 mod state;
 mod repository;
+mod error;
 
 use anyhow::{Context, Result};
 use axum::{extract::State, response::IntoResponse};
 use config::parameter;
-use errors::AppError;
+use error::app_error::AppError;
 use http::Method;
 use middleware::log;
 use route::create_router;

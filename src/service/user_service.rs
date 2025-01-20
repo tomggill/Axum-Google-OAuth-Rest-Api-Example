@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{config::database::Database, errors::AppError, repository::user_repository::{UserRepository, UserRepositoryTrait}, state::app_state::UserContext, User};
+use crate::{config::database::Database, error::app_error::AppError, repository::user_repository::{UserRepository, UserRepositoryTrait}, state::app_state::UserContext, User};
 
 
 #[derive(Clone)]

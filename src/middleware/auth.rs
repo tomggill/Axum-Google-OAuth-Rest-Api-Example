@@ -7,7 +7,7 @@ use axum::{
 
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 
-use crate::{ errors::AppError, repository::user_repository::UserRepositoryTrait, service::google_token_service::{GoogleTokenService, TokenServiceTrait}, state::app_state::UserContext, AppState};
+use crate::{error::app_error::AppError, repository::user_repository::UserRepositoryTrait, service::google_token_service::{GoogleTokenService, TokenServiceTrait}, state::app_state::UserContext, AppState};
 
 // TODO - Add appropriate error responses
 pub async fn auth(

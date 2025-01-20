@@ -1,6 +1,6 @@
 use axum::{body::Body, extract::Request, middleware::Next, response::Response};
 
-use crate::errors::AppError;
+use crate::error::app_error::AppError;
 
 pub async fn log_request(req: Request, next: Next) -> Result<Response<Body>, AppError> {
     let method = req.method().clone();

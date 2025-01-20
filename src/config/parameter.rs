@@ -1,7 +1,7 @@
 use anyhow::Context;
 use dotenv;
 
-use crate::errors::AppError;
+use crate::error::app_error::AppError;
 
 pub fn init() {
     dotenv::dotenv().expect("Failed to load .env file");
