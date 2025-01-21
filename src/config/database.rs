@@ -1,6 +1,6 @@
 use anyhow::Context;
 use async_trait::async_trait;
-use sqlx::{mysql::MySqlPoolOptions, MySql, MySqlPool, Pool};
+use sqlx::{mysql::MySqlPoolOptions, MySqlPool};
 
 use crate::error::app_error::AppError;
 
@@ -8,7 +8,7 @@ use super::parameter;
 
 #[derive(Clone)]
 pub struct Database {
-    pool: MySqlPool,
+    pub pool: MySqlPool,
 }
 
 #[async_trait]
@@ -16,7 +16,7 @@ pub trait DatabaseTrait {
     async fn new() -> Result<Self, AppError>
     where
         Self: Sized;
-    fn get_pool(&self) -> &Pool<MySql>;
+    fn get_pool(&self) -> &MySqlPool;
 }
 
 #[async_trait]
@@ -32,7 +32,7 @@ impl DatabaseTrait for Database {
         Ok(Self { pool })
     }
 
-    fn get_pool(&self) -> &Pool<MySql> {
+    fn get_pool(&self) -> &MySqlPool {
         &self.pool
     }
 }

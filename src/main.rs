@@ -1,15 +1,15 @@
-mod config;
-mod handler;
-mod middleware;
-mod route;
-mod service;
-mod state;
-mod repository;
-mod error;
+pub mod config;
+pub mod handler;
+pub mod middleware;
+pub mod route;
+pub mod service;
+pub mod state;
+pub mod repository;
+pub mod error;
 
 use anyhow::{Context, Result};
 use axum::{extract::State, response::IntoResponse};
-use config::parameter;
+use config::{database::{Database, DatabaseTrait}, parameter};
 use error::app_error::AppError;
 use http::Method;
 use middleware::log;
@@ -17,7 +17,7 @@ use route::create_router;
 use serde::{Deserialize, Serialize};
 use state::app_state::AppState;
 use tower_http::cors::{Any, CorsLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{layer::SubscriberExt, registry::Data, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
@@ -34,7 +34,8 @@ async fn main() -> Result<(), AppError> {
     tracing::info!("Starting up the application...");
 
 
-    let app_state = AppState::new().await?;
+    let db = Database::new().await?;
+    let app_state = AppState::new(db).await?;
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

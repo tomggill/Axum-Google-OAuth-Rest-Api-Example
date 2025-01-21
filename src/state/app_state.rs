@@ -31,8 +31,8 @@ impl FromRef<AppState> for GoogleTokenService {
 }
 
 impl AppState {
-    pub async fn new() -> Result<Self, AppError> {
-        let db_conn = Arc::new(Database::new().await?);
+    pub async fn new(db: Database) -> Result<Self, AppError> {
+        let db_conn = Arc::new(db);
         Ok(Self {
             database: db_conn.clone(),
             http_client: Client::new(),

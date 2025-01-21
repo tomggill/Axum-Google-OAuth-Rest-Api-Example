@@ -64,3 +64,54 @@ impl UserRepositoryTrait for UserRepository {
         Ok(user_context)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use sqlx::MySqlPool;
+
+    use crate::state::app_state::AppState;
+    use crate::config::database::Database;
+
+    use super::{UserRepository, UserRepositoryTrait};
+
+    async fn setup(db: MySqlPool) -> (AppState, UserRepository) {
+        let db_conn = Database { pool: db };
+        let app = AppState::new(db_conn).await.unwrap();
+        let user_repository = UserRepository::new(&app.database);
+        (app, user_repository)
+    }
+
+    #[sqlx::test(fixtures("./../../tests/fixtures/users.sql"))]
+    async fn test_create_valid_user(db: MySqlPool) {
+        let (_, user_repository) = setup(db).await;
+
+        let response = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
+        assert!(response.is_ok());
+    }
+
+    #[sqlx::test(fixtures("./../../tests/fixtures/users.sql"))]
+    async fn test_create_duplicate_user(db: MySqlPool) {
+        let (_, user_repository) = setup(db).await;
+
+        let _ = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
+        let response = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
+        assert!(response.is_err());
+    }
+
+    #[sqlx::test(fixtures("./../../tests/fixtures/users.sql"))]
+    async fn test_find_non_existent_user(db: MySqlPool) {
+        let (_, user_repository) = setup(db).await;
+
+        let user_context = user_repository.find_user_by_google_id("non_existent_id").await.unwrap();
+        assert!(user_context.is_none());
+    }
+
+    #[sqlx::test(fixtures("./../../tests/fixtures/users.sql"))]
+    async fn test_find_existing_user(db: MySqlPool) {
+        let (_, user_repository) = setup(db).await;
+
+        let _ = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
+        let user_context = user_repository.find_user_by_google_id("123456789").await.unwrap();
+        assert!(user_context.is_some());
+    }
+}
