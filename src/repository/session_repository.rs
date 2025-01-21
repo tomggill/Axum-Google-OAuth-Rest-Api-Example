@@ -72,3 +72,77 @@ impl SessionRepositoryTrait for SessionRepository {
         Ok(session.csrf_token)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use ::chrono::{DateTime, Utc};
+    use sqlx::MySqlPool;
+
+    use crate::repository::session_repository::SessionRepositoryTrait;
+    use crate::state::app_state::AppState;
+    use crate::config::database::{Database, DatabaseTrait};
+
+    use super::SessionRepository;
+
+    async fn setup(db: MySqlPool) -> (AppState, SessionRepository) {
+        let db_conn = Database { pool: db };
+        let app = AppState::new(db_conn).await.unwrap();
+        let user_repository = SessionRepository::new(&app.database);
+        (app, user_repository)
+    }
+
+    #[sqlx::test]
+    async fn test_add_csrf_token(db: MySqlPool) {
+        let (_, session_repository) = setup(db).await;
+
+        let response = session_repository.add_csrf_token("8M2q73XaSqa67eE8Zi", "eQ5MCnz-erkK9Xfm4O3JRA").await;
+        assert!(response.is_ok());
+    }
+
+    #[sqlx::test(fixtures("./../../tests/fixtures/session.sql"))]
+    async fn test_get_csrf_token_by_session_id(db: MySqlPool) {
+        let (_, session_repository) = setup(db).await;
+
+        let csrf_token = session_repository.get_csrf_token_by_session_id("test_session_id").await;
+        assert!(csrf_token.is_ok());
+        assert_eq!(csrf_token.unwrap(), "test_csrf_token");
+    }
+
+    #[sqlx::test(fixtures("./../../tests/fixtures/session.sql"))]
+    async fn test_get_csrf_token_by_expired_session_id(db: MySqlPool) {
+        let (_, session_repository) = setup(db).await;
+
+        let result = session_repository.get_csrf_token_by_session_id("expired_session_id").await;
+        assert!(result.is_err());
+    }
+
+    #[sqlx::test(fixtures("./../../tests/fixtures/session.sql"))]
+    async fn test_get_csrf_token_by_non_existent_session_id(db: MySqlPool) {
+        let (_, session_repository) = setup(db).await;
+
+        let result = session_repository.get_csrf_token_by_session_id("non_existent_session_id").await;
+        assert!(result.is_err());
+    }
+
+    #[sqlx::test(fixtures("./../../tests/fixtures/session.sql"))]
+    async fn test_expire_session(db: MySqlPool) {
+        let (app, session_repository) = setup(db).await;
+
+        let result = session_repository.expire_session("test_session_id").await;
+        assert!(result.is_ok());
+
+        let session = sqlx::query!(
+            r#"
+            SELECT expires_at FROM sessions WHERE session_id = ?
+            "#,
+            "test_session_id"
+        )
+        .fetch_one(app.database.get_pool())
+        .await
+        .expect("Failed to fetch session");
+
+        let current_time: DateTime<Utc> = Utc::now();
+
+        assert!(session.expires_at.unwrap() < current_time);
+    }
+}

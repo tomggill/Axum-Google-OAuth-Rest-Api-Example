@@ -81,16 +81,16 @@ mod tests {
         (app, user_repository)
     }
 
-    #[sqlx::test(fixtures("./../../tests/fixtures/users.sql"))]
-    async fn test_create_valid_user(db: MySqlPool) {
+    #[sqlx::test]
+    async fn test_add_user_valid(db: MySqlPool) {
         let (_, user_repository) = setup(db).await;
 
         let response = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
         assert!(response.is_ok());
     }
 
-    #[sqlx::test(fixtures("./../../tests/fixtures/users.sql"))]
-    async fn test_create_duplicate_user(db: MySqlPool) {
+    #[sqlx::test]
+    async fn test_add_user_duplicate(db: MySqlPool) {
         let (_, user_repository) = setup(db).await;
 
         let _ = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
@@ -98,16 +98,16 @@ mod tests {
         assert!(response.is_err());
     }
 
-    #[sqlx::test(fixtures("./../../tests/fixtures/users.sql"))]
-    async fn test_find_non_existent_user(db: MySqlPool) {
+    #[sqlx::test]
+    async fn test_find_user_by_google_id_non_existent(db: MySqlPool) {
         let (_, user_repository) = setup(db).await;
 
         let user_context = user_repository.find_user_by_google_id("non_existent_id").await.unwrap();
         assert!(user_context.is_none());
     }
 
-    #[sqlx::test(fixtures("./../../tests/fixtures/users.sql"))]
-    async fn test_find_existing_user(db: MySqlPool) {
+    #[sqlx::test]
+    async fn test_find_user_by_google_id_existing(db: MySqlPool) {
         let (_, user_repository) = setup(db).await;
 
         let _ = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
