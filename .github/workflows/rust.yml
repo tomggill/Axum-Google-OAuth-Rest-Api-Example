@@ -38,6 +38,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin/sqlx
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
@@ -47,6 +48,7 @@ jobs:
           echo "${{secrets.TEST_SECRETS}}" >> .env
 
       - name: Install sqlx-cli
+        if: steps.cache-build.outputs.cache-hit != 'true'
         run: cargo install sqlx-cli --no-default-features --features mysql
 
       - name: Run migrations
