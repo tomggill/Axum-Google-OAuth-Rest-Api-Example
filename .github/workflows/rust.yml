@@ -47,9 +47,13 @@ jobs:
           touch .env
           echo "${{secrets.TEST_SECRETS}}" >> .env
 
-      - name: Install sqlx-cli
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: cargo install sqlx-cli --no-default-features --features mysql
+      # - name: Install sqlx-cli
+      #   if: steps.cache-deps.outputs.cache-hit != 'true'
+      #   run: cargo install sqlx-cli --no-default-features --features mysql
+      -name Install sqlx-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install sqlx-cli --no-default-features --features mysql
 
       - name: Run migrations
         run: sqlx migrate run
