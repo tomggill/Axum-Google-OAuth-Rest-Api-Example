@@ -67,23 +67,22 @@ impl UserRepositoryTrait for UserRepository {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use sqlx::MySqlPool;
 
-    use crate::state::app_state::AppState;
     use crate::config::database::Database;
 
     use super::{UserRepository, UserRepositoryTrait};
 
-    async fn setup(db: MySqlPool) -> (AppState, UserRepository) {
+    async fn get_user_repository(db: MySqlPool) -> UserRepository {
         let db_conn = Database { pool: db };
-        let app = AppState::new(db_conn).await.unwrap();
-        let user_repository = UserRepository::new(&app.database);
-        (app, user_repository)
+        UserRepository::new(&Arc::new(db_conn))
     }
 
     #[sqlx::test]
     async fn test_add_user_valid(db: MySqlPool) {
-        let (_, user_repository) = setup(db).await;
+        let user_repository = get_user_repository(db).await;
 
         let response = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
         assert!(response.is_ok());
@@ -91,7 +90,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_add_user_duplicate(db: MySqlPool) {
-        let (_, user_repository) = setup(db).await;
+        let user_repository = get_user_repository(db).await;
 
         let _ = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
         let response = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
@@ -100,7 +99,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_find_user_by_google_id_non_existent(db: MySqlPool) {
-        let (_, user_repository) = setup(db).await;
+        let user_repository = get_user_repository(db).await;
 
         let user_context = user_repository.find_user_by_google_id("non_existent_id").await.unwrap();
         assert!(user_context.is_none());
@@ -108,7 +107,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_find_user_by_google_id_existing(db: MySqlPool) {
-        let (_, user_repository) = setup(db).await;
+        let user_repository = get_user_repository(db).await;
 
         let _ = user_repository.add_user("123456789", "test@lift.com", "John", "Smith").await;
         let user_context = user_repository.find_user_by_google_id("123456789").await.unwrap();

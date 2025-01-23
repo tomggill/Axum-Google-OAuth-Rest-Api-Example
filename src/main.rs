@@ -71,7 +71,7 @@ async fn main() -> Result<(), AppError> {
 
 // TODO - Bad naming - need to redo the structs for google responses.
 #[derive(Debug, Serialize, Deserialize)]
-struct User {
+pub struct User {
     sub: String,
     given_name: String,
     family_name: String,
