@@ -7,6 +7,10 @@ pub mod state;
 pub mod repository;
 pub mod error;
 
+#[cfg(test)]
+pub mod test_utils;
+
+
 use anyhow::{Context, Result};
 use axum::{extract::State, response::IntoResponse};
 use config::{database::{Database, DatabaseTrait}, parameter};
@@ -17,7 +21,7 @@ use route::create_router;
 use serde::{Deserialize, Serialize};
 use state::app_state::AppState;
 use tower_http::cors::{Any, CorsLayer};
-use tracing_subscriber::{layer::SubscriberExt, registry::Data, util::SubscriberInitExt};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
