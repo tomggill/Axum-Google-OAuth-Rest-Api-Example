@@ -48,9 +48,10 @@ jobs:
           echo "${{secrets.TEST_SECRETS}}" >> .env
 
       - name: Install sqlx-cli
-        uses: actions-rs/cargo@v1
-        with:
-          command: install sqlx-cli --no-default-features --features mysql
+        run: |
+          if ! [ -f ~/.cargo/bin/sqlx ]; then
+            cargo install sqlx-cli --no-default-features --features mysql
+          fi
 
       - name: Run migrations
         run: sqlx migrate run
