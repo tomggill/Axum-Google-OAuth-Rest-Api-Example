@@ -60,7 +60,7 @@ pub async fn auth_callback(
 
     let user_data = google_token_service.get_user_info(&access_token).await?;
 
-    let user_context = app_state.user_service.get_or_insert_user(&user_data).await?;
+    let user_context = app_state.user_service.find_or_insert_user(&user_data).await?;
     app_state.set_user_context(user_context).await;
 
     let cookies = [
