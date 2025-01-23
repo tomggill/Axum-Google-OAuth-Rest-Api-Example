@@ -151,6 +151,7 @@ mod tests {
     use axum_extra::headers::{Cookie, HeaderMapExt};
     use chrono::Utc;
     use http::HeaderMap;
+    use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, TokenUrl};
     use sqlx::MySqlPool;
 
     use crate::{assert_error, config::database::Database, error::{app_error::AppError, token_error::TokenError}, handler::auth_handler::validate_csrf_token, repository::session_repository::{SessionRepository, SessionRepositoryTrait}, state::app_state::AppState};
@@ -158,7 +159,13 @@ mod tests {
 
     async fn setup(db: MySqlPool) -> (AppState, SessionRepository) {
         let db_conn = Database { pool: db };
-        let app_state = AppState::new(db_conn).await.unwrap();
+        let placeholder_client = BasicClient::new(
+            ClientId::new("test-client-id".to_string()),
+            Some(ClientSecret::new("test-client-secret".to_string())),
+            AuthUrl::new("https://test.auth.url".to_string()).unwrap(),
+            Some(TokenUrl::new("https://test.token.url".to_string()).unwrap())
+        );
+        let app_state = AppState::new(db_conn, placeholder_client).await.unwrap();
         let session_repository = SessionRepository::new(&app_state.database);
         (app_state, session_repository)
     }

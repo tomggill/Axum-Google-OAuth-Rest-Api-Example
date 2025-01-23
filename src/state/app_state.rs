@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::extract::FromRef;
+use oauth2::basic::BasicClient;
 use reqwest::Client;
 use tokio::sync::RwLock;
 
@@ -31,13 +32,13 @@ impl FromRef<AppState> for GoogleTokenService {
 }
 
 impl AppState {
-    pub async fn new(db: Database) -> Result<Self, AppError> {
+    pub async fn new(db: Database, oauth_client: BasicClient) -> Result<Self, AppError> {
         let db_conn = Arc::new(db);
         Ok(Self {
             database: db_conn.clone(),
             http_client: Client::new(),
             user_context: Arc::new(RwLock::new(None)),
-            google_token_service: GoogleTokenService::new(),
+            google_token_service: GoogleTokenService::new(oauth_client),
             user_service: UserService::new(&db_conn),
             user_repository: UserRepository::new(&db_conn),
             session_repository: SessionRepository::new(&db_conn),
@@ -63,11 +64,18 @@ impl AppState {
 mod tests {
     use super::*;
     use crate::config::database::Database;
+    use oauth2::{AuthUrl, ClientId, ClientSecret, TokenUrl};
     use sqlx::MySqlPool;
     
     async fn setup(db: MySqlPool) -> AppState {
         let db_conn = Database { pool: db };
-        AppState::new(db_conn).await.unwrap()
+        let placeholder_client = BasicClient::new(
+            ClientId::new("test-client-id".to_string()),
+            Some(ClientSecret::new("test-client-secret".to_string())),
+            AuthUrl::new("https://test.auth.url".to_string()).unwrap(),
+            Some(TokenUrl::new("https://test.token.url".to_string()).unwrap())
+        );
+        AppState::new(db_conn, placeholder_client).await.unwrap()
     }
 
     #[sqlx::test]
