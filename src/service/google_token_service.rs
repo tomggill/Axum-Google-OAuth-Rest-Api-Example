@@ -40,16 +40,16 @@ impl TokenServiceTrait for GoogleTokenService {
 
     async fn generate_authorisation_url(&self) -> Result<(Url, CsrfToken), AppError> {
         let (auth_url, csrf_token) = self.oauth_client
-        .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new(
-            parameter::get("GOOGLE_EMAIL_SCOPE")?,
-        ))
-        .add_scope(Scope::new(
-            parameter::get("GOOGLE_PROFILE_SCOPE")?,
-        ))
-        .add_extra_param("access_type", "offline")
-        .add_extra_param("prompt", "consent")
-        .url();
+            .authorize_url(CsrfToken::new_random)
+            .add_scope(Scope::new(
+                parameter::get("GOOGLE_EMAIL_SCOPE")?,
+            ))
+            .add_scope(Scope::new(
+                parameter::get("GOOGLE_PROFILE_SCOPE")?,
+            ))
+            .add_extra_param("access_type", "offline")
+            .add_extra_param("prompt", "consent")
+            .url();
 
         Ok((auth_url, csrf_token))
     }
