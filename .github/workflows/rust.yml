@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  DATABASE_URL: mysql://root:password@localhost:3306/test_db
 
 jobs:
   build:
