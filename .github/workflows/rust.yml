@@ -8,7 +8,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  DATABASE_URL: mysql://root:password@localhost:3306/test_db
 
 jobs:
   build:
@@ -32,6 +31,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - name: Create .env file
         run: |
           touch .env
@@ -42,6 +49,14 @@ jobs:
 
       - name: Run migrations
         run: sqlx migrate run
+
+      - name: Cache build artifacts
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-target-
 
       - name: Build
         run: cargo build --verbose
