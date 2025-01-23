@@ -56,14 +56,6 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Cache build artifacts
-        uses: actions/cache@v3
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-target-
-
       - name: 🔨 Build
         uses: actions-rs/cargo@v1
         with:
