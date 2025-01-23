@@ -153,7 +153,7 @@ mod tests {
     use http::HeaderMap;
     use sqlx::MySqlPool;
 
-    use crate::{assert_error, config::database::{Database, DatabaseTrait}, error::{app_error::AppError, token_error::TokenError}, handler::auth_handler::validate_csrf_token, repository::session_repository::{SessionRepository, SessionRepositoryTrait}, state::app_state::AppState};
+    use crate::{assert_error, config::database::Database, error::{app_error::AppError, token_error::TokenError}, handler::auth_handler::validate_csrf_token, repository::session_repository::{SessionRepository, SessionRepositoryTrait}, state::app_state::AppState};
 
 
     async fn setup(db: MySqlPool) -> (AppState, SessionRepository) {

@@ -13,7 +13,7 @@ pub mod test_utils;
 
 use anyhow::{Context, Result};
 use axum::{extract::State, response::IntoResponse};
-use config::{database::{Database, DatabaseTrait}, parameter};
+use config::{database::Database, parameter};
 use error::app_error::AppError;
 use http::Method;
 use middleware::log;
@@ -38,7 +38,8 @@ async fn main() -> Result<(), AppError> {
     tracing::info!("Starting up the application...");
 
 
-    let db = Database::new().await?;
+    let database_url = parameter::get("DATABASE_URL")?;
+    let db = Database::new(&database_url).await?;
     let app_state = AppState::new(db).await?;
 
     let cors = CorsLayer::new()

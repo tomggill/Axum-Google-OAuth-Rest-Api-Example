@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use async_trait::async_trait;
 
-use crate::{config::database::{Database, DatabaseTrait}, error::app_error::AppError, state::app_state::UserContext};
+use crate::{config::database::Database, error::app_error::AppError, state::app_state::UserContext};
 
 
 #[derive(Clone)]
