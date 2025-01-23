@@ -29,12 +29,16 @@ jobs:
           --health-retries=3
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          touch .env
+          echo "${{secrets.TEST_SECRETS}}" >> .env
 
       - name: Install sqlx-cli
         run: cargo install sqlx-cli --no-default-features --features mysql
-        env:
-          DATABASE_URL: mysql://root:password@localhost:3306/test_db
 
       - name: Run migrations
         run: sqlx migrate run
