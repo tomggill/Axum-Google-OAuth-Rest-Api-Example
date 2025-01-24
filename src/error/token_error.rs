@@ -3,7 +3,7 @@ use http::StatusCode;
 use thiserror::Error;
 
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Eq, PartialEq)]
 pub enum TokenError {
     #[error("Invalid token")]
     InvalidToken,

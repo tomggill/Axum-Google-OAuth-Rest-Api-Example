@@ -1,18 +1,23 @@
-mod config;
-mod handler;
-mod middleware;
-mod route;
-mod service;
-mod state;
-mod repository;
-mod error;
+pub mod config;
+pub mod handler;
+pub mod middleware;
+pub mod route;
+pub mod service;
+pub mod state;
+pub mod repository;
+pub mod error;
+
+#[cfg(test)]
+pub mod test_utils;
+
 
 use anyhow::{Context, Result};
 use axum::{extract::State, response::IntoResponse};
-use config::parameter;
+use config::{database::Database, parameter};
 use error::app_error::AppError;
 use http::Method;
 use middleware::log;
+use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, RevocationUrl, TokenUrl};
 use route::create_router;
 use serde::{Deserialize, Serialize};
 use state::app_state::AppState;
@@ -34,7 +39,10 @@ async fn main() -> Result<(), AppError> {
     tracing::info!("Starting up the application...");
 
 
-    let app_state = AppState::new().await?;
+    let database_url = parameter::get("DATABASE_URL")?;
+    let db = Database::new(&database_url).await?;
+    let oauth_client = get_oauth_client()?;
+    let app_state = AppState::new(db, oauth_client).await?;
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -66,7 +74,7 @@ async fn main() -> Result<(), AppError> {
 
 // TODO - Bad naming - need to redo the structs for google responses.
 #[derive(Debug, Serialize, Deserialize)]
-struct User {
+pub struct User {
     sub: String,
     given_name: String,
     family_name: String,
@@ -88,4 +96,28 @@ async fn protected(State(app_state): State<AppState>) -> Result<impl IntoRespons
         Some(user) => Ok(format!("Welcome to the protected area, {}!", user.name)),
         None => Err(anyhow::anyhow!("You're not logged in.").into()),
     }
+}
+
+fn get_oauth_client() -> Result<BasicClient, AppError> {
+    let client_id = parameter::get("GOOGLE_CLIENT_ID")?;
+    let client_secret = parameter::get("GOOGLE_CLIENT_SECRET")?;
+    let redirect_url = parameter::get("GOOGLE_REDIRECT_URI")?;
+    let auth_url = parameter::get("GOOGLE_AUTH_URI")?;
+    let token_url = parameter::get("GOOGLE_TOKEN_URI")?;
+    let revocation_url = parameter::get("GOOGLE_REVOCATION_URI")?;
+
+
+    Ok(BasicClient::new(
+            ClientId::new(client_id),
+            Some(ClientSecret::new(client_secret)),
+            AuthUrl::new(auth_url).context("failed to create new authorization server URL")?,
+            Some(TokenUrl::new(token_url).context("failed to create new token endpoint URL")?),
+        )
+        .set_redirect_uri(
+            RedirectUrl::new(redirect_url).context("failed to create new redirection URL")?,
+        )
+        .set_revocation_uri(
+            RevocationUrl::new(revocation_url).context("failed to create new revocation URL")?,
+        )
+    )
 }

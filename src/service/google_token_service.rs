@@ -1,5 +1,5 @@
 use anyhow::Context;
-use oauth2::{basic::BasicClient, reqwest::async_http_client, AccessToken, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, RefreshToken, RevocationUrl, Scope, StandardRevocableToken, TokenResponse, TokenUrl};
+use oauth2::{basic::BasicClient, reqwest::async_http_client, AccessToken, AuthorizationCode, CsrfToken, RefreshToken, Scope, StandardRevocableToken, TokenResponse};
 use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +21,7 @@ pub struct GoogleTokenService {
 }
 
 pub trait TokenServiceTrait {
-    fn new() -> Self;
+    fn new(oauth_client: BasicClient) -> Self;
     async fn generate_authorisation_url(&self) -> Result<(Url, CsrfToken), AppError>;
     async fn exchange_authorisation_code(&self, code: String) -> Result<(AccessToken, RefreshToken), AppError>;
     async fn refresh_access_token(&self, refresh_token: String) -> Result<AccessToken, AppError>;
@@ -31,25 +31,25 @@ pub trait TokenServiceTrait {
 }
 
 impl TokenServiceTrait for GoogleTokenService {
-    fn new() -> Self {
+    fn new(oauth_client: BasicClient) -> Self {
         Self {
-            oauth_client: get_oauth_client().unwrap(),
+            oauth_client,
             http_client: Client::new(),
         }
     }
 
     async fn generate_authorisation_url(&self) -> Result<(Url, CsrfToken), AppError> {
         let (auth_url, csrf_token) = self.oauth_client
-        .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new(
-            parameter::get("GOOGLE_EMAIL_SCOPE")?,
-        ))
-        .add_scope(Scope::new(
-            parameter::get("GOOGLE_PROFILE_SCOPE")?,
-        ))
-        .add_extra_param("access_type", "offline")
-        .add_extra_param("prompt", "consent")
-        .url();
+            .authorize_url(CsrfToken::new_random)
+            .add_scope(Scope::new(
+                parameter::get("GOOGLE_EMAIL_SCOPE")?,
+            ))
+            .add_scope(Scope::new(
+                parameter::get("GOOGLE_PROFILE_SCOPE")?,
+            ))
+            .add_extra_param("access_type", "offline")
+            .add_extra_param("prompt", "consent")
+            .url();
 
         Ok((auth_url, csrf_token))
     }
@@ -131,28 +131,4 @@ impl TokenServiceTrait for GoogleTokenService {
 
         Ok(user_data)
     }
-}
-
-fn get_oauth_client() -> Result<BasicClient, AppError> {
-    let client_id = parameter::get("GOOGLE_CLIENT_ID")?;
-    let client_secret = parameter::get("GOOGLE_CLIENT_SECRET")?;
-    let redirect_url = parameter::get("GOOGLE_REDIRECT_URI")?;
-    let auth_url = parameter::get("GOOGLE_AUTH_URI")?;
-    let token_url = parameter::get("GOOGLE_TOKEN_URI")?;
-    let revocation_url = parameter::get("GOOGLE_REVOCATION_URI")?;
-
-
-    Ok(BasicClient::new(
-            ClientId::new(client_id),
-            Some(ClientSecret::new(client_secret)),
-            AuthUrl::new(auth_url).context("failed to create new authorization server URL")?,
-            Some(TokenUrl::new(token_url).context("failed to create new token endpoint URL")?),
-        )
-        .set_redirect_uri(
-            RedirectUrl::new(redirect_url).context("failed to create new redirection URL")?,
-        )
-        .set_revocation_uri(
-            RevocationUrl::new(revocation_url).context("failed to create new revocation URL")?,
-        )
-    )
 }
