@@ -8,7 +8,7 @@ This project is an open source template for a rust Axum project with Google OAut
 
 ### Introduction
 
-In my effort to learn rust I found there isn't many examples of a full E2E authentication setup using rust Axum for the Google OAuth flow. I have created this project as an example for any future developers wanting to integrate with Google OAuth.
+In my effort to learn rust I found there isn't many examples of a full E2E authentication setup using Axum for the Google OAuth flow. I have created this project as an example for any future developers wanting to integrate with Google OAuth.
 
 This repository includes:
 
