@@ -1,0 +1,35 @@
+services:
+  db:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: lift
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - lift-rust
+
+  app:
+    container_name: lift-rust
+    image: lift-rust:latest
+    build:
+      context: .
+      args:
+        DATABASE_URL: mysql://root:password@db:3306/lift
+    environment:
+      DATABASE_URL: mysql://root:password@db:3306/lift
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - lift-rust
+
+volumes:
+  db_data:
+
+networks:
+  lift-rust:
+    external: true
