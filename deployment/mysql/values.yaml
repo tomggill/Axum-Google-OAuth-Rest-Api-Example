@@ -1,0 +1,23 @@
+replicaCount: 1
+mysql:
+  name: mysql
+  group: db
+  container:
+    image: mysql:latest
+    port: 3306
+  service:
+    type: ClusterIP
+    port: 3306
+  volume:
+    name: mysql-storage
+    kind: PersistentVolumeClaim
+    mountPath: /var/lib/mysqlql/data
+    pvc:
+      name: mysql-persistent-volume-claim
+      accessMode: ReadWriteOnce
+      storage: 4Gi
+  config:
+    name: mysql-config
+    data:
+      - key: key
+        value: value

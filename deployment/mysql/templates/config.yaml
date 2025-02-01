@@ -1,0 +1,11 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.mysql.config.name }}
+  labels:
+    group: {{ .Values.mysql.group }}
+data: 
+{{- range .Values.mysql.config.data }}
+  {{ .key }}: {{ .value }}
+{{- end}}

@@ -1,0 +1,7 @@
+mysql:
+  config:
+    data:
+      - key: MYSQL_DATABASE
+        value: lift
+      - key: MYSQL_ROOT_PASSWORD
+        value: password
