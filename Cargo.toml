@@ -28,9 +28,13 @@ sqlx = { version = "0.8.3", features = [
     "runtime-async-std-native-tls",
     "chrono",
     "uuid",
-    "migrate",
+    "migrate"
 ] }
 async-trait = "0.1.85"
 rand = "0.8.5"
 thiserror = "2.0.11"
 axum-test = "17.1.0"
+
+[[bin]]
+name = "oauth-app"
+path = "src/main.rs"
