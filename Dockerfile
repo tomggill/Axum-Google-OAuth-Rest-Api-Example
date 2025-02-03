@@ -1,6 +1,6 @@
 FROM rust:latest
 
-WORKDIR /usr/src/lift-rust
+WORKDIR /usr/src/oauth-app
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
@@ -16,9 +16,9 @@ ENV SQLX_OFFLINE=true
 
 RUN cargo build --release
 
-COPY entrypoint.sh /usr/src/lift-rust/entrypoint.sh
-RUN chmod +x /usr/src/lift-rust/entrypoint.sh
+COPY entrypoint.sh /usr/src/oauth-app/entrypoint.sh
+RUN chmod +x /usr/src/oauth-app/entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["./target/release/lift-rust"]
+CMD ["./target/release/oauth-app"]

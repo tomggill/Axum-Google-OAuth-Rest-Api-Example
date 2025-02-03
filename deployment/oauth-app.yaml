@@ -1,0 +1,35 @@
+app:
+  name: oauth-app
+  group: backend
+  config:
+    name: oauth-app
+  container:
+    image: oauth-app:latest
+    imagePullPolicy: Never
+    port: 3000
+    env:
+      - key: GOOGLE_CLIENT_ID
+        value: 140006604503-pokvudi35jckg6srikhjfdh7omuru97i.apps.googleusercontent.com
+      - key: GOOGLE_REDIRECT_URI
+        value: http://127.0.0.1:3000/auth/authorized
+      - key: GOOGLE_AUTH_URI
+        value: https://accounts.google.com/o/oauth2/v2/auth
+      - key: GOOGLE_TOKEN_URI
+        value: https://oauth2.googleapis.com/token
+      - key: GOOGLE_REVOCATION_URI
+        value: https://oauth2.googleapis.com/revoke
+      - key: GOOGLE_TOKEN_INFO_URI
+        value: https://www.googleapis.com/oauth2/v1/tokeninfo
+      - key: GOOGLE_EMAIL_SCOPE
+        value: https://www.googleapis.com/auth/userinfo.email
+      - key: GOOGLE_PROFILE_SCOPE
+        value: https://www.googleapis.com/auth/userinfo.profile
+      - key: RUST_LOG
+        value: sqlx=debug,oauth-app=debug
+    envSecrets:
+      - name: DATABASE_URL
+        secretName: oauth-app-secret
+        secretKey: DATABASE_URL
+      - name: GOOGLE_CLIENT_SECRET
+        secretName: oauth-app-secret
+        secretKey: GOOGLE_CLIENT_SECRET

@@ -10,4 +10,4 @@ echo "MySQL is up - running migrations..."
 cargo sqlx migrate run
 
 echo "Starting the app..."
-exec ./target/release/lift-rust
+exec ./target/release/oauth-app

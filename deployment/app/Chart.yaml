@@ -1,0 +1,14 @@
+apiVersion: v2
+name: app
+description: A Helm chart for OAuth App
+type: application
+version: 0.1.0
+appVersion: 1.16.0
+keywords:
+  - app
+  - rust
+  - web
+home: https://github.com/tomggill/Axum-Google-OAuth-Rest-Api-Example
+maintainers:
+  - name: Tom Gill
+    url: https://github.com/tomggill

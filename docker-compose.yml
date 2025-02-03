@@ -2,34 +2,34 @@ services:
   db:
     image: mysql:latest
     environment:
-      MYSQL_DATABASE: lift
+      MYSQL_DATABASE: oauth
       MYSQL_ROOT_PASSWORD: password
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
     networks:
-      - lift-rust
+      - oauth-app
 
   app:
-    container_name: lift-rust
-    image: lift-rust:latest
+    container_name: oauth-app
+    image: oauth-app:latest
     build:
       context: .
       args:
-        DATABASE_URL: mysql://root:password@db:3306/lift
+        DATABASE_URL: mysql://root:password@db:3306/oauth
     environment:
-      DATABASE_URL: mysql://root:password@db:3306/lift
+      DATABASE_URL: mysql://root:password@db:3306/oauth
     ports:
       - "3000:3000"
     depends_on:
       - db
     networks:
-      - lift-rust
+      - oauth-app
 
 volumes:
   db_data:
 
 networks:
-  lift-rust:
+  oauth-app:
     external: true
