@@ -2,6 +2,6 @@ mysql:
   config:
     data:
       - key: MYSQL_DATABASE
-        value: lift
+        value: oauth
       - key: MYSQL_ROOT_PASSWORD
         value: password

@@ -4,7 +4,7 @@ use dotenv;
 use crate::error::app_error::AppError;
 
 pub fn init() {
-    dotenv::dotenv().expect("Failed to load .env file");
+    dotenv::dotenv().ok();
 }
 
 pub fn get(parameter: &str) -> Result<String, AppError> {
